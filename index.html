@@ -1,0 +1,1207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BrewStock – Coffee Shop Reorder Tracker</title>
+  <style>
+    :root {
+      --bg-cream: #fbf9f5;
+      --surface-card: #ffffff;
+      --border-subtle: #e8e2d8;
+      --text-main: #2b221c;
+      --text-muted: #6e6259;
+      --coffee-primary: #4a3427;
+      --coffee-hover: #362419;
+      --coffee-light: #f1eae2;
+      --reorder-bg: #fff1f0;
+      --reorder-border: #fca5a5;
+      --reorder-text: #b91c1c;
+      --reorder-badge: #dc2626;
+      --stocked-bg: #f0fdf4;
+      --stocked-border: #86efac;
+      --stocked-text: #15803d;
+      --stocked-badge: #16a34a;
+      --toast-bg: #2b221c;
+      --toast-text: #ffffff;
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --shadow-sm: 0 1px 3px rgba(43, 34, 28, 0.06);
+      --shadow-md: 0 4px 14px rgba(43, 34, 28, 0.08);
+      --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-cream);
+      color: var(--text-main);
+      font-family: var(--font-family);
+      line-height: 1.5;
+      min-height: 100vh;
+      padding: 1.5rem 1rem 3rem;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    /* Header */
+    header {
+      margin-bottom: 2rem;
+      text-align: center;
+    }
+
+    .brand-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: var(--coffee-light);
+      color: var(--coffee-primary);
+      padding: 0.3rem 0.8rem;
+      border-radius: 999px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    h1 {
+      font-size: 2rem;
+      font-weight: 800;
+      color: var(--coffee-primary);
+      letter-spacing: -0.5px;
+      margin-bottom: 0.5rem;
+    }
+
+    .subtitle {
+      color: var(--text-muted);
+      font-size: 1.05rem;
+      max-width: 620px;
+      margin: 0 auto;
+    }
+
+    /* Summary Bar */
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .summary-card {
+      background: var(--surface-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 1rem 1.25rem;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .summary-card.alert {
+      border-color: var(--reorder-border);
+      background: linear-gradient(180deg, #ffffff 0%, var(--reorder-bg) 100%);
+    }
+
+    .summary-label {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+
+    .summary-val {
+      font-size: 2rem;
+      font-weight: 800;
+      line-height: 1;
+    }
+
+    .summary-card.alert .summary-val {
+      color: var(--reorder-badge);
+    }
+
+    /* Action Controls & Filters */
+    .controls-panel {
+      background: var(--surface-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 1rem;
+      margin-bottom: 1.5rem;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .filter-group {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .filter-btn {
+      appearance: none;
+      border: 1px solid var(--border-subtle);
+      background: var(--surface-card);
+      color: var(--text-muted);
+      padding: 0.5rem 1rem;
+      border-radius: 999px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: all 0.15s ease;
+    }
+
+    .filter-btn:hover {
+      border-color: var(--coffee-primary);
+      color: var(--coffee-primary);
+    }
+
+    .filter-btn.active {
+      background: var(--coffee-primary);
+      color: #ffffff;
+      border-color: var(--coffee-primary);
+    }
+
+    .filter-btn .badge {
+      background: rgba(255, 255, 255, 0.25);
+      padding: 0.1rem 0.45rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+    }
+
+    .filter-btn:not(.active) .badge {
+      background: var(--coffee-light);
+      color: var(--coffee-primary);
+    }
+
+    .filter-btn:not(.active) .badge.reorder-count {
+      background: var(--reorder-bg);
+      color: var(--reorder-badge);
+    }
+
+    .add-trigger-btn {
+      appearance: none;
+      background: var(--coffee-primary);
+      color: #ffffff;
+      border: none;
+      padding: 0.55rem 1.1rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: background-color 0.15s ease;
+      margin-left: auto;
+    }
+
+    .add-trigger-btn:hover {
+      background: var(--coffee-hover);
+    }
+
+    /* Add Form Box */
+    .form-card {
+      background: var(--surface-card);
+      border: 1.5px solid var(--coffee-light);
+      border-radius: var(--radius-md);
+      padding: 1.25rem;
+      margin-bottom: 1.5rem;
+      box-shadow: var(--shadow-md);
+      display: none;
+      animation: fadeIn 0.2s ease-out;
+    }
+
+    .form-card.visible {
+      display: block;
+    }
+
+    .form-card h3 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      margin-bottom: 0.75rem;
+      color: var(--coffee-primary);
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+
+    .field-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+
+    .field-group label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .field-group input {
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      padding: 0.6rem 0.75rem;
+      font-size: 0.95rem;
+      outline: none;
+      font-family: inherit;
+      transition: border-color 0.15s;
+    }
+
+    .field-group input:focus {
+      border-color: var(--coffee-primary);
+      box-shadow: 0 0 0 2px var(--coffee-light);
+    }
+
+    .form-warning-banner {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      color: #991b1b;
+      padding: 0.65rem 0.9rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.88rem;
+      font-weight: 500;
+      margin-bottom: 0.85rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      line-height: 1.4;
+      animation: fadeIn 0.15s ease-out;
+    }
+
+    .form-warning-banner svg {
+      flex-shrink: 0;
+      color: #dc2626;
+    }
+
+    .input-warning {
+      border-color: #dc2626 !important;
+      box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.15) !important;
+    }
+
+    .form-actions {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: flex-end;
+    }
+
+    .btn-secondary {
+      background: transparent;
+      border: 1px solid var(--border-subtle);
+      color: var(--text-muted);
+      padding: 0.55rem 1rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .btn-secondary:hover {
+      background: var(--bg-cream);
+      color: var(--text-main);
+    }
+
+    /* Inventory Items List */
+    .inventory-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .item-card {
+      background: var(--surface-card);
+      border: 1.5px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 1.1rem 1.25rem;
+      box-shadow: var(--shadow-sm);
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      align-items: center;
+      gap: 1.25rem;
+      transition: border-color 0.15s ease, transform 0.15s ease;
+    }
+
+    .item-card.reorder-needed {
+      border-color: var(--reorder-border);
+      background: linear-gradient(90deg, #ffffff 0%, #fffcfc 100%);
+    }
+
+    /* Item Meta */
+    .item-info {
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+      min-width: 0;
+    }
+
+    .item-title-row {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+    }
+
+    .item-name {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--text-main);
+      word-break: break-word;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.2rem 0.65rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+
+    .status-badge.reorder {
+      background: var(--reorder-bg);
+      color: var(--reorder-text);
+      border: 1px solid var(--reorder-border);
+    }
+
+    .status-badge.reorder::before {
+      content: "";
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--reorder-badge);
+      display: inline-block;
+    }
+
+    .status-badge.stocked {
+      background: var(--stocked-bg);
+      color: var(--stocked-text);
+      border: 1px solid var(--stocked-border);
+    }
+
+    .status-badge.stocked::before {
+      content: "";
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--stocked-badge);
+      display: inline-block;
+    }
+
+    .item-details {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .item-details strong {
+      color: var(--text-main);
+    }
+
+    /* Stock Counter Controls */
+    .stock-control {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: var(--bg-cream);
+      padding: 0.35rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-subtle);
+    }
+
+    .step-btn {
+      width: 42px;
+      height: 42px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--surface-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      color: var(--coffee-primary);
+      font-size: 1.25rem;
+      font-weight: 700;
+      cursor: pointer;
+      user-select: none;
+      touch-action: manipulation;
+      transition: background-color 0.1s, border-color 0.1s;
+    }
+
+    .step-btn:hover {
+      background: var(--coffee-light);
+      border-color: var(--coffee-primary);
+    }
+
+    .step-btn:active {
+      transform: scale(0.95);
+    }
+
+    .stock-input-wrapper {
+      position: relative;
+      text-align: center;
+    }
+
+    .stock-input {
+      width: 58px;
+      text-align: center;
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--text-main);
+      border: none;
+      background: transparent;
+      outline: none;
+      padding: 0.2rem 0;
+      font-family: inherit;
+    }
+
+    .stock-input:focus {
+      background: var(--surface-card);
+      border-radius: 4px;
+      box-shadow: 0 0 0 1px var(--coffee-primary);
+    }
+
+    /* Delete item button */
+    .delete-btn {
+      background: transparent;
+      border: none;
+      color: #9ca3af;
+      cursor: pointer;
+      padding: 0.5rem;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: color 0.15s, background-color 0.15s;
+    }
+
+    .delete-btn:hover {
+      color: var(--reorder-badge);
+      background: var(--reorder-bg);
+    }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center;
+      padding: 3rem 1.5rem;
+      background: var(--surface-card);
+      border: 1px dashed var(--border-subtle);
+      border-radius: var(--radius-md);
+      color: var(--text-muted);
+    }
+
+    .empty-state svg {
+      margin-bottom: 0.75rem;
+      color: var(--coffee-primary);
+      opacity: 0.6;
+    }
+
+    .empty-state h3 {
+      font-size: 1.15rem;
+      color: var(--text-main);
+      margin-bottom: 0.25rem;
+    }
+
+    /* Friendly Toast Notification */
+    #toast {
+      position: fixed;
+      bottom: 1.5rem;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: var(--toast-bg);
+      color: var(--toast-text);
+      padding: 0.75rem 1.25rem;
+      border-radius: 999px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      box-shadow: var(--shadow-md);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      opacity: 0;
+      pointer-events: none;
+      transition: transform 0.25s ease, opacity 0.25s ease;
+      z-index: 1000;
+      max-width: 90vw;
+      text-align: center;
+    }
+
+    #toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+
+    #toast.error {
+      background: #991b1b;
+    }
+
+    /* Footer */
+    footer {
+      margin-top: 2.5rem;
+      text-align: center;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      align-items: center;
+    }
+
+    .reset-btn {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      text-decoration: underline;
+      cursor: pointer;
+      font-size: 0.85rem;
+    }
+
+    .reset-btn:hover {
+      color: var(--coffee-primary);
+    }
+
+    /* Responsive Adjustments for Mobile */
+    @media (max-width: 650px) {
+      body {
+        padding: 1rem 0.75rem 2.5rem;
+      }
+
+      h1 {
+        font-size: 1.6rem;
+      }
+
+      .subtitle {
+        font-size: 0.95rem;
+      }
+
+      .controls-panel {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .filter-group {
+        width: 100%;
+        justify-content: stretch;
+      }
+
+      .filter-btn {
+        flex: 1;
+        justify-content: center;
+      }
+
+      .add-trigger-btn {
+        width: 100%;
+        justify-content: center;
+        margin-left: 0;
+      }
+
+      .item-card {
+        grid-template-columns: 1fr;
+        gap: 0.85rem;
+      }
+
+      .stock-actions-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding-top: 0.5rem;
+        border-top: 1px dashed var(--border-subtle);
+      }
+
+      .stock-control {
+        width: auto;
+      }
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(-6px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="brand-tag">☕ Coffee Bar Inventory</div>
+      <h1>BrewStock</h1>
+      <p class="subtitle">Monitor your coffee shop's ingredient levels and instantly see which items have fallen below par and need to be reordered this week.</p>
+    </header>
+
+    <!-- Top Summary Statistics -->
+    <section class="summary-grid" aria-label="Inventory Overview">
+      <div class="summary-card" id="card-total">
+        <span class="summary-label">Total Ingredients</span>
+        <span class="summary-val" id="count-total">0</span>
+      </div>
+      <div class="summary-card alert" id="card-reorder">
+        <span class="summary-label">Reorder Needed This Week</span>
+        <span class="summary-val" id="count-reorder">0</span>
+      </div>
+      <div class="summary-card" id="card-stocked">
+        <span class="summary-label">Well Stocked</span>
+        <span class="summary-val" id="count-stocked">0</span>
+      </div>
+    </section>
+
+    <!-- Filter & Add Button Bar -->
+    <section class="controls-panel">
+      <div class="filter-group" role="tablist">
+        <button class="filter-btn active" id="filter-all" data-filter="all" role="tab" aria-selected="true">
+          All Ingredients <span class="badge" id="badge-all">0</span>
+        </button>
+        <button class="filter-btn" id="filter-reorder" data-filter="reorder" role="tab" aria-selected="false">
+          Reorder Only <span class="badge reorder-count" id="badge-reorder">0</span>
+        </button>
+      </div>
+
+      <button class="add-trigger-btn" id="toggle-add-form" aria-expanded="false">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+        Add Ingredient
+      </button>
+    </section>
+
+    <!-- Add Ingredient Form -->
+    <section class="form-card" id="add-form-container">
+      <h3>Add New Ingredient</h3>
+      <div class="form-warning-banner" id="form-warning" style="display: none;" role="alert"></div>
+      <form id="add-ingredient-form" novalidate>
+        <div class="form-grid">
+          <div class="field-group">
+            <label for="item-name-input">Ingredient Name *</label>
+            <input type="text" id="item-name-input" placeholder="e.g. Lavender Syrup" required autocomplete="off">
+          </div>
+          <div class="field-group">
+            <label for="item-unit-input">Unit of Measurement *</label>
+            <input type="text" id="item-unit-input" placeholder="e.g. cartons, lbs, gallons" required autocomplete="off">
+          </div>
+          <div class="field-group">
+            <label for="item-stock-input">Current Stock *</label>
+            <input type="number" id="item-stock-input" min="0" step="any" placeholder="0" required>
+          </div>
+          <div class="field-group">
+            <label for="item-par-input">Reorder When Below *</label>
+            <input type="number" id="item-par-input" min="0" step="any" placeholder="e.g. 5" required>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn-secondary" id="cancel-add-btn">Cancel</button>
+          <button type="submit" class="add-trigger-btn">Save Ingredient</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- Ingredients List -->
+    <main>
+      <div class="inventory-list" id="inventory-list" aria-live="polite">
+        <!-- Cards dynamically injected here -->
+      </div>
+    </main>
+
+    <footer>
+      <p>Data is saved automatically in your browser's local storage.</p>
+      <button class="reset-btn" id="reset-defaults-btn">Reset to sample coffee shop inventory</button>
+    </footer>
+  </div>
+
+  <!-- Friendly Toast Message -->
+  <div id="toast" role="status" aria-live="assertive"></div>
+
+  <script>
+    (function () {
+      'use strict';
+
+      const STORAGE_KEY = 'brewstock_inventory_items_v1';
+
+      // Default realistic coffee shop stock
+      const DEFAULT_ITEMS = [
+        { id: '1', name: 'Espresso Beans (House Blend)', unit: '5lb bags', stock: 2, par: 5 },
+        { id: '2', name: 'Whole Milk', unit: 'gallons', stock: 4, par: 10 },
+        { id: '3', name: 'Oat Milk', unit: 'cartons', stock: 15, par: 12 },
+        { id: '4', name: 'Almond Milk', unit: 'cartons', stock: 3, par: 6 },
+        { id: '5', name: 'Decaf Espresso Beans', unit: '2lb bags', stock: 4, par: 3 },
+        { id: '6', name: 'Vanilla Syrup', unit: '750ml bottles', stock: 1, par: 4 },
+        { id: '7', name: 'Caramel Sauce', unit: '64oz jugs', stock: 3, par: 2 },
+        { id: '8', name: 'Chai Concentrate', unit: '32oz cartons', stock: 2, par: 6 },
+        { id: '9', name: 'Ceremonial Matcha Powder', unit: '100g tins', stock: 3, par: 2 },
+        { id: '10', name: '12oz Hot Cups', unit: 'sleeves (50ct)', stock: 2, par: 6 },
+        { id: '11', name: '16oz Iced Cups', unit: 'sleeves (50ct)', stock: 8, par: 6 },
+        { id: '12', name: 'Espresso Machine Cleaner', unit: 'tubs', stock: 1, par: 2 }
+      ];
+
+      let items = [];
+      let currentFilter = 'all'; // 'all' or 'reorder'
+
+      // DOM Elements
+      const inventoryListEl = document.getElementById('inventory-list');
+      const countTotalEl = document.getElementById('count-total');
+      const countReorderEl = document.getElementById('count-reorder');
+      const countStockedEl = document.getElementById('count-stocked');
+      const badgeAllEl = document.getElementById('badge-all');
+      const badgeReorderEl = document.getElementById('badge-reorder');
+      const filterAllBtn = document.getElementById('filter-all');
+      const filterReorderBtn = document.getElementById('filter-reorder');
+      const toggleAddFormBtn = document.getElementById('toggle-add-form');
+      const addFormContainer = document.getElementById('add-form-container');
+      const addIngredientForm = document.getElementById('add-ingredient-form');
+      const itemNameInput = document.getElementById('item-name-input');
+      const formWarningEl = document.getElementById('form-warning');
+      const cancelAddBtn = document.getElementById('cancel-add-btn');
+      const resetDefaultsBtn = document.getElementById('reset-defaults-btn');
+      const toastEl = document.getElementById('toast');
+
+      // Duplicate Detection Helper
+      function findDuplicateIngredient(queryName) {
+        if (!queryName) return null;
+        const cleanQuery = queryName.trim().toLowerCase();
+        if (!cleanQuery) return null;
+
+        // Base name without parentheses or bracketed notes, e.g. "Oat Milk (Barista Edition)" -> "oat milk"
+        const baseQuery = cleanQuery.replace(/\s*[\(\[].*?[\)\]]\s*/g, ' ').replace(/\s+/g, ' ').trim();
+        const alphaQuery = baseQuery.replace(/[^a-z0-9\s]/g, '').trim();
+
+        return items.find(item => {
+          const cleanItem = item.name.trim().toLowerCase();
+          const baseItem = cleanItem.replace(/\s*[\(\[].*?[\)\]]\s*/g, ' ').replace(/\s+/g, ' ').trim();
+          const alphaItem = baseItem.replace(/[^a-z0-9\s]/g, '').trim();
+
+          // 1. Exact case-insensitive match
+          if (cleanItem === cleanQuery) return true;
+
+          // 2. Base name match (e.g. "Oat Milk" matches "Oat Milk (Barista Edition)")
+          if (baseQuery && baseItem && baseQuery === baseItem) return true;
+
+          // 3. Alphanumeric match (e.g. "Oat-Milk" matches "Oat Milk")
+          if (alphaQuery && alphaItem && alphaQuery === alphaItem) return true;
+
+          // 4. Word boundary / prefix match if length >= 4
+          if (alphaQuery.length >= 4 && alphaItem.length >= 4) {
+            if (alphaItem.startsWith(alphaQuery + ' ') || alphaQuery.startsWith(alphaItem + ' ')) {
+              return true;
+            }
+          }
+
+          return false;
+        });
+      }
+
+      function showFormWarning(message) {
+        if (!formWarningEl) return;
+        formWarningEl.innerHTML = `
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path>
+            <line x1="12" y1="9" x2="12" y2="13"></line>
+            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+          </svg>
+          <span>${message}</span>
+        `;
+        formWarningEl.style.display = 'flex';
+        if (itemNameInput) itemNameInput.classList.add('input-warning');
+      }
+
+      function clearFormWarning() {
+        if (!formWarningEl) return;
+        formWarningEl.style.display = 'none';
+        formWarningEl.innerHTML = '';
+        if (itemNameInput) itemNameInput.classList.remove('input-warning');
+      }
+
+      // Initialize
+      function init() {
+        loadData();
+        setupEventListeners();
+        render();
+      }
+
+      function loadData() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (raw) {
+            items = JSON.parse(raw);
+          } else {
+            items = [...DEFAULT_ITEMS];
+            saveData();
+          }
+        } catch (e) {
+          items = [...DEFAULT_ITEMS];
+          showToast('Could not load saved data; using default ingredients.', true);
+        }
+      }
+
+      function saveData() {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+        } catch (e) {
+          showToast('Unable to save changes to browser storage.', true);
+        }
+      }
+
+      function showToast(message, isError = false) {
+        toastEl.textContent = message;
+        toastEl.className = 'show' + (isError ? ' error' : '');
+        clearTimeout(toastEl._timer);
+        toastEl._timer = setTimeout(() => {
+          toastEl.className = '';
+        }, 3200);
+      }
+
+      function setupEventListeners() {
+        // Filters
+        filterAllBtn.addEventListener('click', () => setFilter('all'));
+        filterReorderBtn.addEventListener('click', () => setFilter('reorder'));
+
+        // Toggle add form
+        toggleAddFormBtn.addEventListener('click', () => {
+          const isVisible = addFormContainer.classList.contains('visible');
+          if (isVisible) {
+            closeAddForm();
+          } else {
+            openAddForm();
+          }
+        });
+
+        cancelAddBtn.addEventListener('click', closeAddForm);
+
+        // Real-time duplicate check as manager types
+        itemNameInput.addEventListener('input', () => {
+          const val = itemNameInput.value.trim();
+          if (!val) {
+            clearFormWarning();
+            return;
+          }
+          const duplicate = findDuplicateIngredient(val);
+          if (duplicate) {
+            const isExact = duplicate.name.toLowerCase() === val.toLowerCase();
+            const msg = isExact
+              ? `Warning: "${duplicate.name}" is already in your inventory list (Current stock: ${duplicate.stock} ${duplicate.unit}).`
+              : `Warning: A matching ingredient ("${duplicate.name}") is already in your inventory (Current stock: ${duplicate.stock} ${duplicate.unit}).`;
+            showFormWarning(msg);
+          } else {
+            clearFormWarning();
+          }
+        });
+
+        // Add form submission
+        addIngredientForm.addEventListener('submit', handleAddIngredient);
+
+        // Reset data
+        resetDefaultsBtn.addEventListener('click', () => {
+          if (confirm('Reset your stock list back to the default sample coffee ingredients?')) {
+            items = JSON.parse(JSON.stringify(DEFAULT_ITEMS));
+            saveData();
+            render();
+            showToast('Stock list reset to default coffee shop ingredients.');
+          }
+        });
+      }
+
+      function setFilter(filter) {
+        currentFilter = filter;
+        if (filter === 'all') {
+          filterAllBtn.classList.add('active');
+          filterAllBtn.setAttribute('aria-selected', 'true');
+          filterReorderBtn.classList.remove('active');
+          filterReorderBtn.setAttribute('aria-selected', 'false');
+        } else {
+          filterReorderBtn.classList.add('active');
+          filterReorderBtn.setAttribute('aria-selected', 'true');
+          filterAllBtn.classList.remove('active');
+          filterAllBtn.setAttribute('aria-selected', 'false');
+        }
+        renderList();
+      }
+
+      function openAddForm() {
+        addFormContainer.classList.add('visible');
+        toggleAddFormBtn.setAttribute('aria-expanded', 'true');
+        clearFormWarning();
+        document.getElementById('item-name-input').focus();
+      }
+
+      function closeAddForm() {
+        addFormContainer.classList.remove('visible');
+        toggleAddFormBtn.setAttribute('aria-expanded', 'false');
+        clearFormWarning();
+        addIngredientForm.reset();
+      }
+
+      function handleAddIngredient(e) {
+        e.preventDefault();
+        const nameInput = document.getElementById('item-name-input');
+        const unitInput = document.getElementById('item-unit-input');
+        const stockInput = document.getElementById('item-stock-input');
+        const parInput = document.getElementById('item-par-input');
+
+        const name = nameInput.value.trim();
+        const unit = unitInput.value.trim();
+        const stockVal = parseFloat(stockInput.value);
+        const parVal = parseFloat(parInput.value);
+
+        // Friendly Validation
+        if (!name) {
+          showToast('Please enter an ingredient name so we know what to track.', true);
+          nameInput.focus();
+          return;
+        }
+
+        // Duplicate Check & Warning
+        const duplicate = findDuplicateIngredient(name);
+        if (duplicate) {
+          const isExact = duplicate.name.toLowerCase() === name.toLowerCase();
+          const warningMsg = isExact
+            ? `Warning: "${duplicate.name}" is already in your inventory list! You can update its stock quantity directly in the list below.`
+            : `Warning: "${name}" already exists in your inventory as "${duplicate.name}". You can update its stock quantity directly below.`;
+
+          showFormWarning(warningMsg);
+          showToast(`Warning: "${duplicate.name}" already exists in your inventory!`, true);
+          nameInput.focus();
+          return;
+        }
+
+        if (!unit) {
+          showToast('Please enter a unit of measurement (e.g., cartons, lbs, bottles).', true);
+          unitInput.focus();
+          return;
+        }
+
+        if (isNaN(stockVal) || stockVal < 0) {
+          showToast('Current stock must be 0 or greater.', true);
+          stockInput.focus();
+          return;
+        }
+
+        if (isNaN(parVal) || parVal < 0) {
+          showToast('Reorder threshold must be 0 or greater.', true);
+          parInput.focus();
+          return;
+        }
+
+        const newItem = {
+          id: Date.now().toString(),
+          name,
+          unit,
+          stock: stockVal,
+          par: parVal
+        };
+
+        items.unshift(newItem);
+        saveData();
+        closeAddForm();
+        render();
+        showToast(`Added "${name}" to your inventory.`);
+      }
+
+      function updateItemStock(id, newStock) {
+        const item = items.find(i => i.id === id);
+        if (!item) return;
+
+        if (isNaN(newStock) || newStock < 0) {
+          showToast('Quantity cannot be negative. Please enter 0 or higher.', true);
+          renderList();
+          return;
+        }
+
+        item.stock = Math.round(newStock * 100) / 100; // Round to 2 decimals if fraction
+        saveData();
+        render();
+      }
+
+      function deleteItem(id) {
+        const item = items.find(i => i.id === id);
+        if (!item) return;
+
+        if (confirm(`Remove "${item.name}" from inventory tracking?`)) {
+          items = items.filter(i => i.id !== id);
+          saveData();
+          render();
+          showToast(`Removed "${item.name}".`);
+        }
+      }
+
+      function render() {
+        renderCounts();
+        renderList();
+      }
+
+      function renderCounts() {
+        const total = items.length;
+        const reorderCount = items.filter(i => i.stock <= i.par).length;
+        const stockedCount = total - reorderCount;
+
+        countTotalEl.textContent = total;
+        countReorderEl.textContent = reorderCount;
+        countStockedEl.textContent = stockedCount;
+
+        badgeAllEl.textContent = total;
+        badgeReorderEl.textContent = reorderCount;
+      }
+
+      function renderList() {
+        inventoryListEl.innerHTML = '';
+
+        const displayedItems = items.filter(item => {
+          if (currentFilter === 'reorder') {
+            return item.stock <= item.par;
+          }
+          return true;
+        });
+
+        if (displayedItems.length === 0) {
+          const emptyDiv = document.createElement('div');
+          emptyDiv.className = 'empty-state';
+          if (currentFilter === 'reorder') {
+            emptyDiv.innerHTML = `
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <path d="m9 12 2 2 4-4"></path>
+              </svg>
+              <h3>All Stocked Up!</h3>
+              <p>Great news! No ingredients have dropped below their reorder threshold.</p>
+            `;
+          } else {
+            emptyDiv.innerHTML = `
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 6 6 18"></path>
+                <path d="m6 6 12 12"></path>
+              </svg>
+              <h3>No Ingredients Found</h3>
+              <p>Click "Add Ingredient" above to start tracking your inventory.</p>
+            `;
+          }
+          inventoryListEl.appendChild(emptyDiv);
+          return;
+        }
+
+        displayedItems.forEach(item => {
+          const needsReorder = item.stock <= item.par;
+          const card = document.createElement('div');
+          card.className = `item-card ${needsReorder ? 'reorder-needed' : ''}`;
+          card.dataset.id = item.id;
+
+          card.innerHTML = `
+            <div class="item-info">
+              <div class="item-title-row">
+                <span class="item-name">${escapeHTML(item.name)}</span>
+                <span class="status-badge ${needsReorder ? 'reorder' : 'stocked'}">
+                  ${needsReorder ? 'Reorder Needed' : 'In Stock'}
+                </span>
+              </div>
+              <div class="item-details">
+                <span>Unit: <strong>${escapeHTML(item.unit)}</strong></span>
+                <span>•</span>
+                <span>Reorder Par: <strong>${item.par} ${escapeHTML(item.unit)}</strong></span>
+              </div>
+            </div>
+
+            <div class="stock-actions-row">
+              <div class="stock-control">
+                <button type="button" class="step-btn btn-decrease" aria-label="Decrease ${escapeHTML(item.name)} stock" data-id="${item.id}">−</button>
+                <div class="stock-input-wrapper">
+                  <input type="number" class="stock-input" value="${item.stock}" min="0" step="any" data-id="${item.id}" aria-label="Current stock for ${escapeHTML(item.name)}">
+                </div>
+                <button type="button" class="step-btn btn-increase" aria-label="Increase ${escapeHTML(item.name)} stock" data-id="${item.id}">+</button>
+              </div>
+            </div>
+
+            <button type="button" class="delete-btn" title="Remove ingredient" data-id="${item.id}" aria-label="Remove ${escapeHTML(item.name)}">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 6h18"></path>
+                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+              </svg>
+            </button>
+          `;
+
+          // Button handlers
+          const decBtn = card.querySelector('.btn-decrease');
+          const incBtn = card.querySelector('.btn-increase');
+          const stockInput = card.querySelector('.stock-input');
+          const delBtn = card.querySelector('.delete-btn');
+
+          decBtn.addEventListener('click', () => {
+            const current = parseFloat(stockInput.value) || 0;
+            if (current <= 0) {
+              showToast('Stock is already at 0. Cannot decrease further.', true);
+              return;
+            }
+            const next = Math.max(0, current - 1);
+            updateItemStock(item.id, next);
+          });
+
+          incBtn.addEventListener('click', () => {
+            const current = parseFloat(stockInput.value) || 0;
+            updateItemStock(item.id, current + 1);
+          });
+
+          stockInput.addEventListener('change', (e) => {
+            const val = parseFloat(e.target.value);
+            if (isNaN(val) || val < 0) {
+              showToast('Please enter a valid quantity of 0 or greater.', true);
+              e.target.value = item.stock;
+              return;
+            }
+            updateItemStock(item.id, val);
+          });
+
+          delBtn.addEventListener('click', () => {
+            deleteItem(item.id);
+          });
+
+          inventoryListEl.appendChild(card);
+        });
+      }
+
+      function escapeHTML(str) {
+        if (!str) return '';
+        return str
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
+      // Run on DOM ready
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+      } else {
+        init();
+      }
+    })();
+  </script>
+</body>
+</html>
